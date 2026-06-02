@@ -26,19 +26,18 @@ local DefaultConfig = {
 }
 
 local keys = {f=false, b=false, l=false, r=false, u=false, d=false}
-local bodyVelocity, bodyGyro, spinVelocity
-local toggles = {} -- Store toggle functions to update them externally
-local sliders = {} -- Store slider update functions
+local bodyVelocity, bodyGyro
+local toggles = {} 
+local sliders = {} 
 
 -- ==========================================
 -- UI SETUP & ANIMATIONS
 -- ==========================================
 local gui = Instance.new("ScreenGui")
-gui.Name = "DZHackerUltimateV3"
+gui.Name = "DZHackerFixed"
 gui.ResetOnSpawn = false
 gui.Parent = game.CoreGui
 
--- Tween Function for smooth UI animations
 local function tweenUI(obj, properties, duration)
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     local tween = TweenService:Create(obj, tweenInfo, properties)
@@ -47,7 +46,7 @@ local function tweenUI(obj, properties, duration)
 end
 
 -- ==========================================
--- FLOATING ROUND MENU BUTTON (DZ)
+-- FLOATING ROUND MENU BUTTON (DRAGGABLE)
 -- ==========================================
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 55, 0, 55)
@@ -68,7 +67,6 @@ openStroke.Color = Color3.fromRGB(0, 255, 100)
 openStroke.Thickness = 2.5
 openStroke.Parent = openBtn
 
--- Button pulse animation
 task.spawn(function()
     while true do
         tweenUI(openStroke, {Thickness = 4}, 0.5).Completed:Wait()
@@ -76,11 +74,32 @@ task.spawn(function()
     end
 end)
 
+-- Dragging Logic for Open Button
+local draggingBtn, dragBtnStart, startBtnPos
+openBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingBtn = true
+        dragBtnStart = input.Position
+        startBtnPos = openBtn.Position
+    end
+end)
+openBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingBtn = false
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if draggingBtn and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragBtnStart
+        openBtn.Position = UDim2.new(startBtnPos.X.Scale, startBtnPos.X.Offset + delta.X, startBtnPos.Y.Scale, startBtnPos.Y.Offset + delta.Y)
+    end
+end)
+
 -- ==========================================
 -- MAIN MENU FRAME & CUSTOM DRAGGING
 -- ==========================================
 local menuFrame = Instance.new("Frame")
-menuFrame.Size = UDim2.new(0, 320, 0, 0) -- Starts at 0 height for animation
+menuFrame.Size = UDim2.new(0, 320, 0, 0) 
 menuFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
 menuFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 menuFrame.ClipsDescendants = true
@@ -96,24 +115,24 @@ menuStroke.Color = Color3.fromRGB(0, 255, 100)
 menuStroke.Thickness = 1.5
 menuStroke.Parent = menuFrame
 
--- Custom Smooth Dragging
-local dragging, dragInput, dragStart, startPos
+-- Dragging Logic for Main Menu
+local draggingMenu, dragMenuStart, startMenuPos
 menuFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = menuFrame.Position
+        draggingMenu = true
+        dragMenuStart = input.Position
+        startMenuPos = menuFrame.Position
     end
 end)
 menuFrame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
+        draggingMenu = false
     end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        menuFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    if draggingMenu and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragMenuStart
+        menuFrame.Position = UDim2.new(startMenuPos.X.Scale, startMenuPos.X.Offset + delta.X, startMenuPos.Y.Scale, startMenuPos.Y.Offset + delta.Y)
     end
 end)
 
@@ -121,7 +140,7 @@ end)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 50)
 title.BackgroundTransparency = 1
-title.Text = "🔥 DZ HACKER V3 🔥"
+title.Text = "🔥 DZ HACKER V3.5 🔥"
 title.TextColor3 = Color3.fromRGB(0, 255, 100)
 title.Font = Enum.Font.GothamBlack
 title.TextSize = 20
@@ -133,7 +152,7 @@ scrollFrame.Size = UDim2.new(1, 0, 1, -50)
 scrollFrame.Position = UDim2.new(0, 0, 0, 50)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.ScrollBarThickness = 4
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 650) -- Increased to fit new buttons
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 650)
 scrollFrame.Parent = menuFrame
 
 local listLayout = Instance.new("UIListLayout")
@@ -212,16 +231,16 @@ local function createSlider(text, min, max, default, order, callback)
         callback(val)
     end
 
-    local dragging = false
+    local draggingSlider = false
     bgBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
+            draggingSlider = true
             setSlider(math.floor(min + (max - min) * math.clamp((input.Position.X - bgBar.AbsolutePosition.X) / bgBar.AbsoluteSize.X, 0, 1)))
         end
     end)
-    UserInputService.InputEnded:Connect(function(input) dragging = false end)
+    UserInputService.InputEnded:Connect(function(input) draggingSlider = false end)
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             setSlider(math.floor(min + (max - min) * math.clamp((input.Position.X - bgBar.AbsolutePosition.X) / bgBar.AbsoluteSize.X, 0, 1)))
         end
     end)
@@ -274,12 +293,17 @@ toggles.spin = createToggle("SPIN PLAYER", 5, function(active)
     Config.spinning = active
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
+        -- Clean up any existing spins first
+        for _, v in pairs(hrp:GetChildren()) do
+            if v.Name == "DZSpin" then v:Destroy() end
+        end
         if Config.spinning then
-            spinVelocity = Instance.new("BodyAngularVelocity")
-            spinVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
-            spinVelocity.AngularVelocity = Vector3.new(0, 40, 0)
-            spinVelocity.Parent = hrp
-        elseif spinVelocity then spinVelocity:Destroy() end
+            local newSpin = Instance.new("BodyAngularVelocity")
+            newSpin.Name = "DZSpin"
+            newSpin.MaxTorque = Vector3.new(0, math.huge, 0)
+            newSpin.AngularVelocity = Vector3.new(0, 40, 0)
+            newSpin.Parent = hrp
+        end
     end
 end)
 
@@ -294,9 +318,9 @@ end)
 
 createButton("FORCE THIRD PERSON", Color3.fromRGB(60, 180, 200), 8, function()
     player.CameraMode = Enum.CameraMode.Classic
-    player.CameraMinZoomDistance = 12 -- Force camera out
+    player.CameraMinZoomDistance = 12 
     task.wait(0.1)
-    player.CameraMinZoomDistance = 0.5 -- Allow standard zooming again
+    player.CameraMinZoomDistance = 0.5 
 end)
 
 -- RESET SETTINGS BUTTON
@@ -317,7 +341,7 @@ createButton("RESET CHARACTER", Color3.fromRGB(200, 50, 50), 10, function()
     end
 end)
 
--- Menu Open/Close Toggle
+-- Menu Open/Close Toggle (only toggle if not dragging)
 local menuOpen = false
 openBtn.MouseButton1Click:Connect(function()
     menuOpen = not menuOpen
@@ -395,13 +419,15 @@ btnFly.MouseButton1Click:Connect(function()
         tweenUI(btnFly, {BackgroundColor3 = Color3.fromRGB(0, 200, 80)}, 0.2)
         if hrp then
             for _, v in pairs(hrp:GetChildren()) do
-                if v:IsA("BodyVelocity") or v:IsA("BodyGyro") then v:Destroy() end
+                if v.Name == "DZFlyVel" or v.Name == "DZFlyGyro" then v:Destroy() end
             end
             bodyVelocity = Instance.new("BodyVelocity", hrp)
+            bodyVelocity.Name = "DZFlyVel"
             bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
             bodyVelocity.Velocity = Vector3.new(0, 0, 0)
             
             bodyGyro = Instance.new("BodyGyro", hrp)
+            bodyGyro.Name = "DZFlyGyro"
             bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
             bodyGyro.P = 9e4
             bodyGyro.CFrame = hrp.CFrame
@@ -415,14 +441,17 @@ btnFly.MouseButton1Click:Connect(function()
     end
 end)
 
-RunService.RenderStepped:Connect(function()
+-- Heartbeat fixes the stutter/lag completely
+RunService.Heartbeat:Connect(function()
     local char = player.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
     
-    -- Smooth Fly Logic
-    if Config.flying and hrp and bodyVelocity and bodyGyro then
+    if not hum or not hrp then return end
+
+    -- Instant velocity assignment (No Lerp = Zero Lag)
+    if Config.flying and bodyVelocity and bodyGyro and hrp:FindFirstChild("DZFlyVel") then
         local cam = workspace.CurrentCamera
         local moveDir = Vector3.new(0, 0, 0)
         
@@ -435,38 +464,33 @@ RunService.RenderStepped:Connect(function()
         
         if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
         
-        bodyVelocity.Velocity = bodyVelocity.Velocity:Lerp(moveDir * Config.flySpeed, 0.15)
+        bodyVelocity.Velocity = moveDir * Config.flySpeed
         bodyGyro.CFrame = cam.CFrame
     end
 
-    -- Fixed God Mode (Forces 9999999 HP instead of breaking with math.huge)
-    if Config.godMode and hum then
-        if hum.MaxHealth ~= 9999999 then
-            hum.MaxHealth = 9999999
-        end
-        if hum.Health ~= 9999999 then
-            hum.Health = 9999999
-        end
+    -- Strictly enforced God Mode check
+    if Config.godMode then
+        if hum.MaxHealth < 9999999 then hum.MaxHealth = 9999999 end
+        if hum.Health < 9999999 then hum.Health = 9999999 end
     end
 end)
 
--- Anti-AFK (Prevents 20 min idle kick)
+-- Anti-AFK
 VirtualUser.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
 
--- Reset handling
+-- Safe Reset handling without throwing nil errors
 player.CharacterAdded:Connect(function(char)
     Config.flying = false
     btnFly.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     
-    task.wait(0.5)
-    local hum = char:WaitForChild("Humanoid", 3)
+    local hum = char:WaitForChild("Humanoid", 5)
     if hum then
         hum.UseJumpPower = true
         hum.JumpPower = Config.jumpPower
-        hum.WalkSpeed = Config.walkSpeed -- Re-apply walk speed on spawn
+        hum.WalkSpeed = Config.walkSpeed
         
         if Config.godMode then
             hum.MaxHealth = 9999999
@@ -475,11 +499,16 @@ player.CharacterAdded:Connect(function(char)
     end
     
     if Config.spinning then
-        local hrp = char:WaitForChild("HumanoidRootPart", 3)
+        local hrp = char:WaitForChild("HumanoidRootPart", 5)
         if hrp then
-            spinVelocity = Instance.new("BodyAngularVelocity", hrp)
-            spinVelocity.MaxTorque = Vector3.new(0, math.huge, 0)
-            spinVelocity.AngularVelocity = Vector3.new(0, 40, 0)
+            for _, v in pairs(hrp:GetChildren()) do
+                if v.Name == "DZSpin" then v:Destroy() end
+            end
+            local newSpin = Instance.new("BodyAngularVelocity")
+            newSpin.Name = "DZSpin"
+            newSpin.MaxTorque = Vector3.new(0, math.huge, 0)
+            newSpin.AngularVelocity = Vector3.new(0, 40, 0)
+            newSpin.Parent = hrp
         end
     end
 end)
